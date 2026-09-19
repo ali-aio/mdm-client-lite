@@ -30,8 +30,9 @@ import com.aioapp.mdmlite.AioMdm
 import com.aioapp.mdmlite.MdmStatus
 
 /**
- * Test host for MDM-lite: a live status panel, test buttons, and a WebView wired the way
- * android-menu-board's MainScreen is. The buttons do what the adb triggers do:
+ * Test host for MDM Lite: a full-screen sample menu board in a WebView wired the way
+ * android-menu-board's MainScreen is, with MDM Lite's live status and test buttons in a
+ * Debug panel (bottom-right chip). The buttons do what the adb triggers do:
  *   adb shell am start --activity-single-top -n com.aioapp.mdmlite.demo/.DemoActivity \
  *       --es trigger crash|anr|jserror|badurl|blank
  * Views are built in code (no layout XML, no AndroidX) and every button takes D-pad focus,
@@ -55,6 +56,7 @@ class DemoActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(buildScreen())
         web = newWebView().also { webHost.addView(it, matchParent()) }
+        debugChip.requestFocus()
         handleTrigger(intent?.getStringExtra("trigger"))
     }
 
@@ -116,74 +118,108 @@ class DemoActivity : Activity() {
 
     // ── Layout ───────────────────────────────────────────────────────────────────
 
+    private lateinit var debugPanel: View
+    private lateinit var debugChip: TextView
+
+    /**
+     * The menu board fills the screen, like the real app. Everything MDM-lite knows (state,
+     * identity, versions, test buttons) lives in a Debug panel behind a small chip in the
+     * bottom-right corner, so the board looks like a board.
+     */
     private fun buildScreen(): View {
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(BG)
-            // Android 15+ draws apps edge to edge: keep the panel clear of the status
-            // bar and the page clear of the navigation bar.
+        val root = FrameLayout(this).apply { setBackgroundColor(BG) }
+        webHost = FrameLayout(this).apply { setBackgroundColor(BG) }
+        root.addView(webHost, matchParent())
+
+        // Overlay layer: kept clear of the status/navigation bars (Android 15+ is edge to edge).
+        val overlay = FrameLayout(this).apply {
             setOnApplyWindowInsetsListener { v, insets ->
                 val bars = insets.getInsets(android.view.WindowInsets.Type.systemBars())
                 v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
                 insets
             }
         }
+        root.addView(overlay, matchParent())
 
+        debugPanel = buildDebugPanel().apply { visibility = View.GONE }
+        overlay.addView(debugPanel, FrameLayout.LayoutParams(dp(440), ViewGroup.LayoutParams.WRAP_CONTENT,
+            Gravity.BOTTOM or Gravity.END).apply { setMargins(dp(16), dp(16), dp(16), dp(62)) })
+
+        debugChip = text("Debug", 12f, TEXT, bold = true).apply {
+            gravity = Gravity.CENTER
+            setPadding(dp(14), dp(7), dp(14), dp(7))
+            isFocusable = true
+            isClickable = true
+            alpha = 0.85f
+            background = StateListDrawable().apply {
+                addState(intArrayOf(android.R.attr.state_focused), pill(CHIP_OVERLAY, FOCUS))
+                addState(intArrayOf(), pill(CHIP_OVERLAY, null))
+            }
+            setOnClickListener { toggleDebug() }
+        }
+        overlay.addView(debugChip, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM or Gravity.END).apply { setMargins(0, 0, dp(16), dp(16)) })
+        return root
+    }
+
+    private fun toggleDebug() {
+        val open = debugPanel.visibility != View.VISIBLE
+        debugPanel.visibility = if (open) View.VISIBLE else View.GONE
+        debugChip.text = if (open) "Close" else "Debug"
+        if (open) debugPanel.findFocus() ?: debugPanel.focusSearch(View.FOCUS_DOWN)?.requestFocus()
+    }
+
+    // The remote's Menu / Info key opens the panel from anywhere.
+    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean {
+        if (keyCode == android.view.KeyEvent.KEYCODE_MENU || keyCode == android.view.KeyEvent.KEYCODE_INFO) {
+            toggleDebug(); return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        if (::debugPanel.isInitialized && debugPanel.visibility == View.VISIBLE) toggleDebug()
+        else @Suppress("DEPRECATION") super.onBackPressed()
+    }
+
+    private fun buildDebugPanel(): View {
         val panel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(18), dp(20), dp(12))
+            setPadding(dp(18), dp(16), dp(18), dp(14))
+            background = GradientDrawable().apply { cornerRadius = dp(16).toFloat(); setColor(PANEL); setStroke(dp(1), PANEL_EDGE) }
+            elevation = dp(8).toFloat()
         }
-        panel.addView(text("MDM-lite demo", 13f, MUTED, bold = true).apply { letterSpacing = 0.08f; isAllCaps = true })
+        panel.addView(text("MDM Lite · debug", 12f, MUTED, bold = true).apply { letterSpacing = 0.08f; isAllCaps = true })
 
         val stateRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(6), 0, dp(10))
+            setPadding(0, dp(6), 0, dp(8))
         }
         stateDot = View(this).apply {
             background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(AMBER) }
         }
-        stateRow.addView(stateDot, LinearLayout.LayoutParams(dp(12), dp(12)).apply { marginEnd = dp(10) })
-        stateText = text("Starting…", 22f, TEXT, bold = true)
+        stateRow.addView(stateDot, LinearLayout.LayoutParams(dp(10), dp(10)).apply { marginEnd = dp(8) })
+        stateText = text("Starting…", 17f, TEXT, bold = true)
         stateRow.addView(stateText)
         panel.addView(stateRow)
 
-        // Key/value rows: two columns on a wide screen (TV) to keep the panel short, one
-        // column on a phone so values are not cut off.
-        val wide = resources.configuration.screenWidthDp >= 600
-        val left = column()
-        val right = if (wide) column() else left
-        listOf("Serial", "Server", "Last check-in").forEach { left.addView(row(it)) }
-        listOf("App", "Library", "Queued events", "In front").forEach { right.addView(row(it)) }
-        if (wide) {
-            val grid = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-            grid.addView(left, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.3f))
-            grid.addView(right, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            panel.addView(grid)
-        } else {
-            panel.addView(left)
-        }
-        root.addView(panel)
+        listOf("Serial", "Server", "Last check-in", "App", "Library", "Queued events", "In front").forEach { panel.addView(row(it)) }
 
-        val buttons = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(dp(16), dp(4), dp(16), dp(12))
-        }
-        buttons.addView(button("Check in now", primary = true) { AioMdm.checkinNow() })
-        buttons.addView(button("Test crash") { handleTrigger("crash") })
-        buttons.addView(button("Freeze 30 s") { handleTrigger("anr") })
-        buttons.addView(button("JS error") { handleTrigger("jserror") })
-        buttons.addView(button("Bad URL") { handleTrigger("badurl") })
-        buttons.addView(button("Blank page") { handleTrigger("blank") })
-        buttons.addView(button("Home page") { handleTrigger("home") })
-        root.addView(HorizontalScrollView(this).apply {
-            isHorizontalScrollBarEnabled = false
-            addView(buttons)
-        })
-
-        webHost = FrameLayout(this).apply { setBackgroundColor(Color.WHITE) }
-        root.addView(webHost, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
-        return root
+        // Test buttons, two rows so they fit the panel's width.
+        val b1 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(12), 0, dp(6)) }
+        b1.addView(button("Check in now", primary = true) { AioMdm.checkinNow() })
+        b1.addView(button("Test crash") { handleTrigger("crash") })
+        b1.addView(button("Freeze 30 s") { handleTrigger("anr") })
+        val b2 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        b2.addView(button("JS error") { handleTrigger("jserror") })
+        b2.addView(button("Bad URL") { handleTrigger("badurl") })
+        b2.addView(button("Blank") { handleTrigger("blank") })
+        b2.addView(button("Menu") { handleTrigger("home") })
+        panel.addView(b1)
+        panel.addView(b2)
+        return panel
     }
 
     private fun column() = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -193,17 +229,17 @@ class DemoActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             setPadding(0, dp(2), dp(12), dp(2))
         }
-        r.addView(text(label, 13f, MUTED), LinearLayout.LayoutParams(dp(110), ViewGroup.LayoutParams.WRAP_CONTENT))
-        val v = text("—", 13f, TEXT).apply { isSingleLine = true; ellipsize = android.text.TextUtils.TruncateAt.MIDDLE }
+        r.addView(text(label, 12.5f, MUTED), LinearLayout.LayoutParams(dp(104), ViewGroup.LayoutParams.WRAP_CONTENT))
+        val v = text("—", 12.5f, TEXT).apply { isSingleLine = true; ellipsize = android.text.TextUtils.TruncateAt.MIDDLE }
         rows[label] = v
         r.addView(v)
         return r
     }
 
     private fun button(label: String, primary: Boolean = false, onClick: () -> Unit) =
-        text(label, 14f, if (primary) Color.WHITE else TEXT, bold = true).apply {
+        text(label, 12.5f, if (primary) Color.WHITE else TEXT, bold = true).apply {
             gravity = Gravity.CENTER
-            setPadding(dp(16), dp(10), dp(16), dp(10))
+            setPadding(dp(12), dp(8), dp(12), dp(8))
             isFocusable = true
             isClickable = true
             background = StateListDrawable().apply {
@@ -215,7 +251,7 @@ class DemoActivity : Activity() {
             setOnClickListener { onClick() }
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply { marginEnd = dp(8) }
+            ).apply { marginEnd = dp(6) }
         }
 
     private fun pill(fill: Int, stroke: Int?) = GradientDrawable().apply {
@@ -238,6 +274,9 @@ class DemoActivity : Activity() {
     // ── WebView (the host content) ───────────────────────────────────────────────
 
     private fun newWebView(): WebView = WebView(this).apply {
+        // The board takes no remote input: leave D-pad focus to the Debug chip.
+        isFocusable = false
+        isFocusableInTouchMode = false
         settings.javaScriptEnabled = true
         webViewClient = object : WebViewClient() {
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
@@ -280,26 +319,71 @@ class DemoActivity : Activity() {
         const val SAMPLE_MENU = """<!doctype html><html><head>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-  body{margin:0;font-family:sans-serif;background:#1d1f24;color:#f2f4f7;padding:22px}
-  h1{margin:0 0 4px;font-size:26px;color:#f9674e}
-  p.sub{margin:0 0 18px;color:#9aa3ad;font-size:14px}
-  .item{display:flex;justify-content:space-between;padding:12px 14px;margin:0 0 8px;
-        border-radius:10px;background:#2a2e36;font-size:17px}
-  .item b{color:#ffd166}
-  .note{margin-top:18px;color:#9aa3ad;font-size:13px;line-height:1.4}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:system-ui,sans-serif;background:#0f1115;color:#f4f1ec;display:flex;flex-direction:column;padding:3.2vh 3vw 2.4vh;gap:2.4vh;overflow:hidden}
+  header{display:flex;align-items:baseline;gap:1.4vw}
+  .brand{font-size:5.2vh;font-weight:800;letter-spacing:-.02em}
+  .brand span{background:linear-gradient(90deg,#f9674e,#7a80f6);-webkit-background-clip:text;color:transparent}
+  .tag{color:#a8a39b;font-size:2.2vh}
+  .clock{margin-left:auto;font-size:3vh;font-weight:700;color:#e9e4dc;font-variant-numeric:tabular-nums}
+  main{flex:1;display:grid;grid-template-columns:1.05fr 1fr 1fr;gap:2vw;min-height:0}
+  .promo{border-radius:2.4vh;padding:3.4vh 2.2vw;background:linear-gradient(145deg,#f9674e 0%,#c45a8f 55%,#7a80f6 100%);display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 1.6vh 4vh rgba(0,0,0,.35)}
+  .promo .kick{font-size:2vh;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.9}
+  .promo h2{margin:1.4vh 0 0;font-size:6.4vh;line-height:1.02;font-weight:800;letter-spacing:-.02em}
+  .promo p{margin:1.4vh 0 0;font-size:2.4vh;opacity:.92;max-width:26ch}
+  .promo .price{font-size:7vh;font-weight:800}
+  .promo .price small{display:block;font-size:2.4vh;font-weight:600;opacity:.85;margin-top:.4vh}
+  .col{display:flex;flex-direction:column;gap:2.4vh;min-height:0}
+  .cat{background:#181b21;border:1px solid #262a31;border-radius:2vh;padding:2.2vh 1.6vw}
+  .cat h3{margin:0 0 1.2vh;font-size:2.1vh;letter-spacing:.14em;text-transform:uppercase;color:#f9674e}
+  .it{display:grid;grid-template-columns:1fr auto;gap:.2vh 1vw;padding:1vh 0;border-top:1px solid #23272e}
+  .it:first-of-type{border-top:0}
+  .it b{font-size:2.6vh;font-weight:700}
+  .it i{font-style:normal;font-size:2.6vh;font-weight:700;color:#ffd166;font-variant-numeric:tabular-nums}
+  .it em{grid-column:1/-1;font-style:normal;font-size:1.85vh;color:#a8a39b}
+  .new{font-size:1.5vh;font-weight:800;color:#0f1115;background:#ffd166;border-radius:99px;padding:.2vh .6vw;margin-left:.6vw;vertical-align:.3vh}
+  footer{display:flex;justify-content:space-between;color:#7d786f;font-size:1.9vh;padding-right:7vw}
+  @media (max-aspect-ratio:1/1){main{grid-template-columns:1fr;overflow:auto}body{overflow:auto}.brand{font-size:4vh}}
 </style></head><body>
-<h1>Sample menu board</h1>
-<p class="sub">Host content for the MDM-lite demo</p>
-<div class="item"><span>Chicken burger</span><b>Rs 850</b></div>
-<div class="item"><span>Loaded fries</span><b>Rs 450</b></div>
-<div class="item"><span>Mint margarita</span><b>Rs 390</b></div>
-<div class="item"><span>Chocolate shake</span><b>Rs 520</b></div>
-<p class="note">MDM-lite watches this page: it reports load errors, JavaScript
-errors and a blank screen, and the MDM can reload it, clear its cache or take a
-screenshot of it.</p>
+<header><div class="brand"><span>AIO</span> Grill</div><div class="tag">Fresh · Fast · Flame-grilled</div><div class="clock" id="clock"></div></header>
+<main>
+  <section class="promo">
+    <div><div class="kick">Today's special</div><h2>Double Smash Stack</h2><p>Two smashed patties, aged cheddar, pickles and house sauce on a toasted brioche bun.</p></div>
+    <div class="price">Rs 1,190<small>with fries &amp; a drink</small></div>
+  </section>
+  <div class="col">
+    <div class="cat"><h3>Burgers</h3>
+      <div class="it"><b>Classic Beef</b><i>Rs 790</i><em>Beef patty, lettuce, tomato, onion</em></div>
+      <div class="it"><b>Crispy Chicken<span class="new">NEW</span></b><i>Rs 850</i><em>Buttermilk fried chicken, slaw, spicy mayo</em></div>
+      <div class="it"><b>Mushroom Swiss</b><i>Rs 890</i><em>Sautéed mushrooms, Swiss cheese</em></div>
+      <div class="it"><b>Garden Veggie</b><i>Rs 690</i><em>Grilled halloumi, peppers, pesto</em></div>
+    </div>
+    <div class="cat"><h3>Sides</h3>
+      <div class="it"><b>Loaded Fries</b><i>Rs 450</i><em>Cheese sauce, jalapeños, crispy onion</em></div>
+      <div class="it"><b>Onion Rings</b><i>Rs 380</i><em>Beer-battered, smoky dip</em></div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="cat"><h3>Drinks</h3>
+      <div class="it"><b>Mint Margarita</b><i>Rs 390</i><em>Fresh mint, lime, soda</em></div>
+      <div class="it"><b>Iced Latte</b><i>Rs 420</i><em>Double shot, whole milk</em></div>
+      <div class="it"><b>Soft Drinks</b><i>Rs 180</i><em>Cola, lemon-lime, orange</em></div>
+    </div>
+    <div class="cat"><h3>Desserts</h3>
+      <div class="it"><b>Chocolate Shake</b><i>Rs 520</i><em>Belgian chocolate, whipped cream</em></div>
+      <div class="it"><b>Molten Lava Cake</b><i>Rs 560</i><em>Warm, with vanilla ice cream</em></div>
+    </div>
+  </div>
+</main>
+<footer><span>Prices include tax · Ask us about allergens</span><span>Order at the counter or scan the QR on your table</span></footer>
+<script>
+  function tick(){var d=new Date();document.getElementById('clock').textContent=d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});}
+  tick(); setInterval(tick, 15000);
+</script>
 </body></html>"""
 
-        val BG = Color.parseColor("#14161A")
+        val BG = Color.parseColor("#0F1115")
         val TEXT = Color.parseColor("#F2F4F7")
         val MUTED = Color.parseColor("#9AA3AD")
         val CHIP = Color.parseColor("#262A31")
@@ -307,6 +391,9 @@ screenshot of it.</p>
         val ACCENT = Color.parseColor("#F9674E")
         val ACCENT_DARK = Color.parseColor("#E0533B")
         val FOCUS = Color.parseColor("#FFFFFF")
+        val PANEL = Color.parseColor("#FF181B21")
+        val PANEL_EDGE = Color.parseColor("#33FFFFFF")
+        val CHIP_OVERLAY = Color.parseColor("#CC181B21")
         val GREEN = Color.parseColor("#34C759")
         val AMBER = Color.parseColor("#F5A524")
         val RED = Color.parseColor("#F04438")

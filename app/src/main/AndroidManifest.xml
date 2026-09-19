@@ -4,9 +4,10 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <application
         android:name=".DemoApp"
-        android:label="MDM-lite demo"
-        android:banner="@android:drawable/sym_def_app_icon"
-        android:icon="@android:drawable/sym_def_app_icon"
+        android:label="MDM Lite demo"
+        android:banner="@drawable/banner"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
         android:usesCleartextTraffic="true">
         <activity android:name=".DemoActivity" android:exported="true">

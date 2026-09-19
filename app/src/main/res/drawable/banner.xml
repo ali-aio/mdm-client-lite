@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android TV home-screen banner (320x180): the brand gradient with the app glyph. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="320dp" android:height="180dp" android:viewportWidth="320" android:viewportHeight="180">
+    <path android:pathData="M0,0h320v180h-320z"><aapt:attr name="android:fillColor"><gradient android:type="linear" android:startX="0" android:startY="0" android:endX="320" android:endY="180"><item android:offset="0" android:color="#FFF9674E"/><item android:offset="1" android:color="#FF7A80F6"/></gradient></aapt:attr></path>
+    <group android:translateX="106" android:translateY="36">
+        <path android:strokeColor="#FFFFFFFF" android:strokeWidth="5" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000" android:pathData="M32,26h44a8,8 0,0 1,8 8v40a8,8 0,0 1,-8 8h-44a8,8 0,0 1,-8 -8v-40a8,8 0,0 1,8 -8z M24,40h60"/>
+        <path android:fillColor="#FFFFFFFF" android:pathData="M29.4,33a2.6,2.6 0,1 0,5.2 0a2.6,2.6 0,1 0,-5.2 0z M37.4,33a2.6,2.6 0,1 0,5.2 0a2.6,2.6 0,1 0,-5.2 0z"/>
+        <path android:strokeColor="#FFFFFFFF" android:strokeWidth="5" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M40,70V58 M54,70V52 M68,70V62"/>
+    </group>
+</vector>
