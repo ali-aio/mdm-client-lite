@@ -17,8 +17,10 @@ android {
         applicationId = "com.aioapp.mdmlite.demo"
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        // Overridable to build a newer copy for testing remote app updates:
+        // ./gradlew assembleDebug -PversionCode=3 -PversionName=0.1.2
+        versionCode = ((project.findProperty("versionCode") as String?) ?: "2").toInt()
+        versionName = (project.findProperty("versionName") as String?) ?: "0.1.1"
         buildConfigField("String", "MDM_SERVER_URL", "\"$mdmServerUrl\"")
         buildConfigField("String", "MDM_ENROLL_TOKEN", "\"$mdmEnrollToken\"")
         buildConfigField("String", "DEMO_URL", "\"$demoUrl\"")

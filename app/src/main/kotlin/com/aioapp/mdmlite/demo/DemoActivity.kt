@@ -105,6 +105,7 @@ class DemoActivity : Activity() {
             "${DateUtils.getRelativeTimeSpanString(s.lastCheckinAtMs, System.currentTimeMillis(), DateUtils.SECOND_IN_MILLIS)} · ${s.lastCheckinResult}"
         rows.getValue("Queued events").text = s.pendingEvents.toString()
         rows.getValue("Library").text = s.libraryVersion
+        rows.getValue("App").text = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
         rows.getValue("In front").text = if (s.appInForeground) "yes" else "no"
     }
 
@@ -153,7 +154,7 @@ class DemoActivity : Activity() {
         val left = column()
         val right = if (wide) column() else left
         listOf("Serial", "Server", "Last check-in").forEach { left.addView(row(it)) }
-        listOf("Queued events", "Library", "In front").forEach { right.addView(row(it)) }
+        listOf("App", "Library", "Queued events", "In front").forEach { right.addView(row(it)) }
         if (wide) {
             val grid = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
             grid.addView(left, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.3f))
