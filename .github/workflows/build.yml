@@ -1,0 +1,94 @@
+name: Build demo app
+
+# The MDM Lite demo app is what Lite is tested with before it goes into a shipping app,
+# and it is managed from the MDM like any other client: this builds it and publishes it
+# to the "lite-demo" slot, so the Clients page owns its versioning instead of whoever
+# last ran a gradle command locally.
+#
+# The library is built from source, so this checks out aio-mdm-lite alongside — a
+# library change is in the next demo build with no AAR copying.
+#
+# Secrets, all optional — without them the job still builds and uploads the APK:
+#   MDM_SERVER_URL / MDM_ADMIN_API_KEY   where to publish
+#   MDM_ENROLL_TOKEN                     baked in at build time; mint it with
+#                                        POST /api/v1/enrollment-profiles
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish to the MDM after building
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: aio-mdm-client-lite
+
+      # settings.gradle.kts points :mdm-lite at ../aio-mdm-lite.
+      - uses: actions/checkout@v4
+        with:
+          repository: forgedynasties/mdm-lite
+          path: aio-mdm-lite
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: What is configured
+        id: have
+        env:
+          MDM_ADMIN_API_KEY: ${{ secrets.MDM_ADMIN_API_KEY }}
+          MDM_ENROLL_TOKEN: ${{ secrets.MDM_ENROLL_TOKEN }}
+        run: |
+          [ -n "$MDM_ADMIN_API_KEY" ] && [ -n "$MDM_ENROLL_TOKEN" ] \
+            && echo "publish=yes" >> "$GITHUB_OUTPUT" || echo "publish=no" >> "$GITHUB_OUTPUT"
+
+      - name: Unit tests
+        working-directory: aio-mdm-client-lite
+        run: ./gradlew :app:testDebugUnitTest :mdm-lite:testDebugUnitTest --console=plain
+
+      # The run number is the version code: a self-update installs only over a strictly
+      # lower one, so every build has to be newer than the last by construction rather
+      # than by someone remembering to bump it.
+      - name: Build
+        working-directory: aio-mdm-client-lite
+        env:
+          SERVER: ${{ secrets.MDM_SERVER_URL }}
+          TOKEN: ${{ secrets.MDM_ENROLL_TOKEN }}
+        run: |
+          ./gradlew :app:assembleDebug --console=plain \
+            -PversionCode="${{ github.run_number }}" \
+            -PversionName="0.1.${{ github.run_number }}" \
+            ${SERVER:+-PmdmServerUrl="$SERVER"} \
+            ${TOKEN:+-PmdmEnrollToken="$TOKEN"}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aio-mdm-lite-demo
+          path: aio-mdm-client-lite/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Publish to the MDM
+        if: >-
+          steps.have.outputs.publish == 'yes' &&
+          github.event_name != 'pull_request' &&
+          (github.ref == 'refs/heads/main' || inputs.publish)
+        env:
+          SERVER: ${{ secrets.MDM_SERVER_URL }}
+          KEY: ${{ secrets.MDM_ADMIN_API_KEY }}
+        run: |
+          curl -fsS -X POST "${SERVER%/}/api/v1/agent-apk?slot=lite-demo&name=aio-mdm-lite-demo.apk" \
+            -H "X-API-Key: $KEY" \
+            -H "Content-Type: application/vnd.android.package-archive" \
+            --data-binary @aio-mdm-client-lite/app/build/outputs/apk/debug/app-debug.apk
