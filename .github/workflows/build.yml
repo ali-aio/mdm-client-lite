@@ -87,8 +87,10 @@ jobs:
         env:
           SERVER: ${{ secrets.MDM_SERVER_URL }}
           KEY: ${{ secrets.MDM_ADMIN_API_KEY }}
+        working-directory: aio-mdm-client-lite
         run: |
-          curl -fsS -X POST "${SERVER%/}/api/v1/agent-apk?slot=lite-demo&name=aio-mdm-lite-demo.apk" \
+          CHANGELOG=$(git log -1 --pretty=%s | python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.stdin.read().strip()))')
+          curl -fsS -X POST "${SERVER%/}/api/v1/agent-apk?slot=lite-demo&name=aio-mdm-lite-demo.apk&changelog=$CHANGELOG" \
             -H "X-API-Key: $KEY" \
             -H "Content-Type: application/vnd.android.package-archive" \
-            --data-binary @aio-mdm-client-lite/app/build/outputs/apk/debug/app-debug.apk
+            --data-binary @app/build/outputs/apk/debug/app-debug.apk
