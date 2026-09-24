@@ -310,80 +310,15 @@ class DemoActivity : Activity() {
     /** The host content: a real page when built with -PdemoUrl, else the sample menu. */
     private fun loadHome(w: WebView) {
         if (BuildConfig.DEMO_URL.isNotBlank()) w.loadUrl(BuildConfig.DEMO_URL)
-        else w.loadDataWithBaseURL("https://demo.mdm-lite.local/", SAMPLE_MENU, "text/html", "utf-8", null)
+        else w.loadUrl(SAMPLE_MENU)
     }
 
     private companion object {
-        // Stands in for the menu board: varied enough that blank-screen detection
-        // does not fire on it, and nothing to load from the network.
-        const val SAMPLE_MENU = """<!doctype html><html><head>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%}
-  body{font-family:system-ui,sans-serif;background:#0f1115;color:#f4f1ec;display:flex;flex-direction:column;padding:3.2vh 3vw 2.4vh;gap:2.4vh;overflow:hidden}
-  header{display:flex;align-items:baseline;gap:1.4vw}
-  .brand{font-size:5.2vh;font-weight:800;letter-spacing:-.02em}
-  .brand span{background:linear-gradient(90deg,#f9674e,#7a80f6);-webkit-background-clip:text;color:transparent}
-  .tag{color:#a8a39b;font-size:2.2vh}
-  .clock{margin-left:auto;font-size:3vh;font-weight:700;color:#e9e4dc;font-variant-numeric:tabular-nums}
-  main{flex:1;display:grid;grid-template-columns:1.05fr 1fr 1fr;gap:2vw;min-height:0}
-  .promo{border-radius:2.4vh;padding:3.4vh 2.2vw;background:linear-gradient(145deg,#f9674e 0%,#c45a8f 55%,#7a80f6 100%);display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 1.6vh 4vh rgba(0,0,0,.35)}
-  .promo .kick{font-size:2vh;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.9}
-  .promo h2{margin:1.4vh 0 0;font-size:6.4vh;line-height:1.02;font-weight:800;letter-spacing:-.02em}
-  .promo p{margin:1.4vh 0 0;font-size:2.4vh;opacity:.92;max-width:26ch}
-  .promo .price{font-size:7vh;font-weight:800}
-  .promo .price small{display:block;font-size:2.4vh;font-weight:600;opacity:.85;margin-top:.4vh}
-  .col{display:flex;flex-direction:column;gap:2.4vh;min-height:0}
-  .cat{background:#181b21;border:1px solid #262a31;border-radius:2vh;padding:2.2vh 1.6vw}
-  .cat h3{margin:0 0 1.2vh;font-size:2.1vh;letter-spacing:.14em;text-transform:uppercase;color:#f9674e}
-  .it{display:grid;grid-template-columns:1fr auto;gap:.2vh 1vw;padding:1vh 0;border-top:1px solid #23272e}
-  .it:first-of-type{border-top:0}
-  .it b{font-size:2.6vh;font-weight:700}
-  .it i{font-style:normal;font-size:2.6vh;font-weight:700;color:#ffd166;font-variant-numeric:tabular-nums}
-  .it em{grid-column:1/-1;font-style:normal;font-size:1.85vh;color:#a8a39b}
-  .new{font-size:1.5vh;font-weight:800;color:#0f1115;background:#ffd166;border-radius:99px;padding:.2vh .6vw;margin-left:.6vw;vertical-align:.3vh}
-  footer{display:flex;justify-content:space-between;color:#7d786f;font-size:1.9vh;padding-right:7vw}
-  @media (max-aspect-ratio:1/1){main{grid-template-columns:1fr;overflow:auto}body{overflow:auto}.brand{font-size:4vh}}
-</style></head><body>
-<header><div class="brand"><span>AIO</span> Grill</div><div class="tag">Fresh · Fast · Flame-grilled</div><div class="clock" id="clock"></div></header>
-<main>
-  <section class="promo">
-    <div><div class="kick">Today's special</div><h2>Double Smash Stack</h2><p>Two smashed patties, aged cheddar, pickles and house sauce on a toasted brioche bun.</p></div>
-    <div class="price">Rs 1,190<small>with fries &amp; a drink</small></div>
-  </section>
-  <div class="col">
-    <div class="cat"><h3>Burgers</h3>
-      <div class="it"><b>Classic Beef</b><i>Rs 790</i><em>Beef patty, lettuce, tomato, onion</em></div>
-      <div class="it"><b>Crispy Chicken<span class="new">NEW</span></b><i>Rs 850</i><em>Buttermilk fried chicken, slaw, spicy mayo</em></div>
-      <div class="it"><b>Mushroom Swiss</b><i>Rs 890</i><em>Sautéed mushrooms, Swiss cheese</em></div>
-      <div class="it"><b>Garden Veggie</b><i>Rs 690</i><em>Grilled halloumi, peppers, pesto</em></div>
-    </div>
-    <div class="cat"><h3>Sides</h3>
-      <div class="it"><b>Loaded Fries</b><i>Rs 450</i><em>Cheese sauce, jalapeños, crispy onion</em></div>
-      <div class="it"><b>Onion Rings</b><i>Rs 380</i><em>Beer-battered, smoky dip</em></div>
-    </div>
-  </div>
-  <div class="col">
-    <div class="cat"><h3>Drinks</h3>
-      <div class="it"><b>Mint Margarita</b><i>Rs 390</i><em>Fresh mint, lime, soda</em></div>
-      <div class="it"><b>Iced Latte</b><i>Rs 420</i><em>Double shot, whole milk</em></div>
-      <div class="it"><b>Soft Drinks</b><i>Rs 180</i><em>Cola, lemon-lime, orange</em></div>
-    </div>
-    <div class="cat"><h3>Desserts</h3>
-      <div class="it"><b>Chocolate Shake</b><i>Rs 520</i><em>Belgian chocolate, whipped cream</em></div>
-      <div class="it"><b>Molten Lava Cake</b><i>Rs 560</i><em>Warm, with vanilla ice cream</em></div>
-    </div>
-  </div>
-</main>
-<footer><span>Prices include tax · Ask us about allergens</span><span>Order at the counter or scan the QR on your table</span></footer>
-<script>
-  function tick(){var d=new Date();document.getElementById('clock').textContent=d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});}
-  tick(); setInterval(tick, 15000);
-</script>
-</body></html>"""
+        // Stands in for the menu board: varied enough that blank-screen detection does
+        // not fire on it, and nothing to load from the network (fonts ship beside it).
+        const val SAMPLE_MENU = "file:///android_asset/menu.html"
 
-        val BG = Color.parseColor("#0F1115")
+        val BG = Color.parseColor("#F6F0E6") // the board's paper, so a reload never flashes dark
         val TEXT = Color.parseColor("#F2F4F7")
         val MUTED = Color.parseColor("#9AA3AD")
         val CHIP = Color.parseColor("#262A31")

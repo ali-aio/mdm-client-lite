@@ -1,0 +1,234 @@
+<!doctype html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AIO Grill · Menu</title>
+<!-- The sample menu board MDM Lite is tested behind. Loaded from the APK's assets
+     (file:///android_asset/menu.html) so it needs no network; fonts ship alongside it. -->
+<style>
+  @font-face{font-family:Bebas;src:url(fonts/BebasNeue.ttf)}
+  @font-face{font-family:Kaushan;src:url(fonts/KaushanScript.ttf)}
+  @font-face{font-family:Marker;src:url(fonts/PermanentMarker.ttf)}
+  :root{--paper:#f6f0e6;--ink:#3a2a20;--ink-2:#6b5646;--orange:#ef7d2d;--orange-2:#d9651b;--cream:#fff8ec;--mute:#b9aa98}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--paper);color:var(--ink);font-family:Bebas,Impact,sans-serif;overflow:hidden;
+    background-image:radial-gradient(ellipse at 50% 40%,rgba(255,255,255,.75),rgba(255,255,255,0) 60%),
+      radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 60%,rgba(90,60,30,.12) 100%)}
+  .board{position:relative;height:100%;display:grid;grid-template-columns:31fr 35fr 34fr;gap:1.6vw;padding:0 2vw 0 0}
+  .script{font-family:Kaushan,cursive;font-weight:400}
+  .marker{font-family:Marker,cursive}
+
+  /* Price rows: NAME ........ $5.30 */
+  .rows{display:flex;flex-direction:column;gap:.9vh}
+  .row{display:flex;align-items:baseline;gap:.5vw;font-size:4.4vh;letter-spacing:.03em;line-height:1}
+  .row .dots{flex:1;border-bottom:.45vh dotted currentColor;opacity:.55;transform:translateY(-.9vh)}
+  .row .p{font-variant-numeric:tabular-nums;min-width:5.4vw;text-align:right}
+  .row.out{color:var(--mute)}
+  .row.out .n,.row.out .p{text-decoration:line-through;text-decoration-thickness:.35vh}
+  .row .soldout{font-family:Kaushan;font-size:2vh;color:var(--orange-2);text-decoration:none;letter-spacing:0;margin-left:.4vw}
+  .heads{display:flex;justify-content:flex-end;gap:.5vw;font-size:2.9vh;letter-spacing:.08em;color:var(--ink-2)}
+  .heads span{min-width:5.4vw;text-align:right}
+
+  /* Left: the orange brush panel */
+  .left{position:relative;display:flex;flex-direction:column}
+  .brush{position:relative;background:var(--orange);color:var(--cream);padding:4vh 2.6vw 5vh 2.4vw;flex:0 0 auto;
+    clip-path:polygon(0 0,100% 0,99% 8%,100% 16%,98% 27%,100% 38%,98.5% 52%,100% 64%,98% 76%,99.5% 88%,97% 94%,92% 97%,84% 95%,76% 99%,66% 96%,57% 100%,45% 96%,35% 99%,24% 95%,14% 99%,6% 96%,0 100%)}
+  .brush .title{text-align:center;margin-bottom:3vh}
+  .brush .del{display:inline-block;background:var(--cream);color:var(--ink);font-family:Marker;font-size:4.6vh;padding:.3vh 1.2vw .1vh;transform:rotate(-3deg);
+    clip-path:polygon(2% 8%,98% 0,100% 90%,4% 100%)}
+  .brush .bur{display:block;font-family:Kaushan;font-size:7.2vh;line-height:.9;margin-top:.2vh;text-shadow:0 .4vh 0 rgba(0,0,0,.12)}
+  .brush .row .dots{opacity:.7}
+  .brush .row.out{color:rgba(255,248,236,.55)}
+  .brush .row .soldout{color:var(--cream)}
+  .pizza{position:relative;flex:1;min-height:0}
+  .pizza svg.slice{position:absolute;left:-1vw;bottom:-1vh;height:42vh}
+  .pizza .lovers{position:absolute;left:2.4vw;top:1.4vh;font-family:Kaushan;font-size:4vh;color:var(--ink);transform:rotate(-6deg)}
+  .badge{position:absolute;right:3.2vw;bottom:5vh;width:15vh;height:15vh;border-radius:50%;background:var(--orange);color:var(--cream);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(-10deg);
+    box-shadow:0 0 0 .6vh var(--paper),0 0 0 .9vh var(--orange),0 1.2vh 2.4vh rgba(90,50,20,.25)}
+  .badge b{font-family:Bebas;font-weight:400;font-size:5.8vh;line-height:.9;letter-spacing:.04em}
+  .badge i{font-family:Kaushan;font-style:normal;font-size:3.4vh;line-height:1}
+
+  /* Centre: MENU, the ribbon, fries */
+  .center{display:flex;flex-direction:column;align-items:center;padding-top:3vh}
+  .burst{height:6vh;margin-bottom:1.2vh}
+  .menu{font-size:25vh;line-height:.8;letter-spacing:.02em;color:var(--ink);text-shadow:.5vh .5vh 0 rgba(58,42,32,.12)}
+  .ribbon{position:relative;margin-top:-1vh;background:var(--orange);color:var(--cream);font-family:Kaushan;font-size:5.4vh;padding:.2vh 3vw .8vh;transform:rotate(-4deg);
+    clip-path:polygon(0 0,100% 0,96% 50%,100% 100%,0 100%,4% 50%)}
+  .fries{display:flex;align-items:center;gap:1vw;margin-top:4vh;width:100%;justify-content:center}
+  .fries svg{height:24vh}
+  .classic{position:relative;text-align:center;color:var(--ink);transform:rotate(-4deg)}
+  .classic .c{font-family:Kaushan;font-size:5vh;display:block;line-height:1}
+  .classic .f{font-family:Marker;font-size:8vh;line-height:.95;letter-spacing:.03em}
+  .classic .spark{position:absolute;height:5vh;left:-3vh;top:-2vh}
+  .classic .spark.r{left:auto;right:-6vh;top:auto;bottom:-3vh;transform:rotate(180deg)}
+  .center .table{width:84%;margin-top:3vh}
+
+  /* Right: crispy chicken */
+  .right{display:flex;flex-direction:column;padding-top:4vh}
+  .tag{align-self:flex-end;background:var(--orange);color:var(--ink);font-size:5.6vh;letter-spacing:.05em;padding:.6vh 1.6vw .2vh;transform:rotate(-2deg);
+    clip-path:polygon(0 6%,100% 0,99% 100%,1.5% 94%)}
+  .right .table{margin-top:2.6vh}
+  .plate{position:relative;flex:1;min-height:0;margin-top:1vh}
+  .plate svg.food{position:absolute;right:-1vw;bottom:-2vh;height:62vh}
+
+  footer{position:absolute;left:0;right:0;bottom:1.4vh;text-align:center;font-family:Kaushan;font-size:2.1vh;color:var(--ink-2);pointer-events:none}
+
+  /* A phone held upright: stack the three columns and let the page scroll. */
+  @media (max-aspect-ratio:1/1){
+    body{overflow:auto}
+    .board{grid-template-columns:1fr;height:auto;padding:0 0 8vh}
+    .row{font-size:3.2vh}.menu{font-size:16vh}.pizza,.plate{height:34vh;flex:none}
+    .pizza svg.slice{height:30vh}.plate svg.food{height:44vh}.right{padding:0 5vw}.center .table{width:90%}
+    .row .p,.heads span{min-width:16vw}
+    .brush{padding:4vh 7vw 6vh}.center .table,.right .table{padding:0 2vw}
+    footer{position:static;padding:0 4vw 3vh}
+  }
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- Crumbly fried edge + crust texture, shared by the tenders. -->
+    <filter id="crisp" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency=".09" numOctaves="3" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feTurbulence type="fractalNoise" baseFrequency=".6" numOctaves="2" seed="9" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 .45  0 0 0 0 .22  0 0 0 0 .05  0 0 0 -1.6 1.05" result="speck"/>
+      <feComposite in="speck" in2="d" operator="in" result="s"/>
+      <feMerge><feMergeNode in="d"/><feMergeNode in="s"/></feMerge>
+    </filter>
+    <radialGradient id="gold" cx="45%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#f7c46a"/><stop offset=".55" stop-color="#e59435"/><stop offset="1" stop-color="#b6601c"/>
+    </radialGradient>
+    <linearGradient id="fry" x1="0" x2="1">
+      <stop offset="0" stop-color="#f0b43a"/><stop offset=".5" stop-color="#ffd970"/><stop offset="1" stop-color="#e6a52b"/>
+    </linearGradient>
+    <radialGradient id="dip" cx="40%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#f0553a"/><stop offset=".7" stop-color="#c62a1b"/><stop offset="1" stop-color="#8f1b10"/>
+    </radialGradient>
+  </defs>
+</svg>
+
+<div class="board">
+  <!-- ── Left ─────────────────────────────────────────── -->
+  <section class="left">
+    <div class="brush">
+      <div class="title"><span class="del">DELICIOUS</span><span class="bur">Burger</span></div>
+      <div class="rows">
+        <div class="row"><span class="n">Beef</span><span class="dots"></span><span class="p">$5.30</span></div>
+        <div class="row"><span class="n">Cheese</span><span class="dots"></span><span class="p">$7.40</span></div>
+        <div class="row"><span class="n">Hawaiian</span><span class="dots"></span><span class="p">$7.60</span></div>
+        <div class="row out"><span class="n">BBQ</span><span class="soldout">sold out</span><span class="dots"></span><span class="p">$6.80</span></div>
+        <div class="row"><span class="n">Chicken</span><span class="dots"></span><span class="p">$6.50</span></div>
+      </div>
+    </div>
+    <div class="pizza">
+      <span class="lovers">Pizza lovers</span>
+      <svg class="slice" viewBox="0 0 300 260" aria-hidden="true">
+        <g transform="rotate(-14 150 130)">
+          <path d="M40 60 Q150 20 262 58 L160 250 Z" fill="#f2c54f"/>
+          <path d="M34 62 Q150 14 268 60 Q272 42 262 34 Q150 -6 38 36 Q26 46 34 62Z" fill="#c98534"/>
+          <path d="M44 46 Q150 8 258 44" stroke="#e7a95a" stroke-width="5" fill="none" stroke-linecap="round" opacity=".7"/>
+          <path d="M52 70 Q90 90 70 110 Q110 120 96 150 Q130 150 128 190 Q150 200 160 238" stroke="#fbe08a" stroke-width="10" fill="none" stroke-linecap="round" opacity=".7"/>
+          <g fill="#c53b24"><circle cx="108" cy="82" r="20"/><circle cx="188" cy="90" r="19"/><circle cx="148" cy="140" r="18"/><circle cx="170" cy="196" r="13"/><circle cx="90" cy="118" r="9"/></g>
+          <g fill="#9b2616" opacity=".55"><circle cx="102" cy="78" r="4"/><circle cx="116" cy="88" r="3"/><circle cx="194" cy="86" r="4"/><circle cx="150" cy="146" r="3"/></g>
+          <g fill="#3f7d34"><path d="M140 96 l10 -8 4 12z"/><path d="M200 128 l12 -4 -2 12z"/><path d="M118 170 l10 2 -6 9z"/><path d="M168 66 l9 6 -10 4z"/></g>
+          <g fill="#2e2a26"><circle cx="126" cy="116" r="4"/><circle cx="196" cy="160" r="4"/><circle cx="76" cy="76" r="4"/></g>
+        </g>
+      </svg>
+      <div class="badge"><b>NEW</b><i>recipe!</i></div>
+    </div>
+  </section>
+
+  <!-- ── Centre ───────────────────────────────────────── -->
+  <section class="center">
+    <svg class="burst" viewBox="0 0 120 50" aria-hidden="true">
+      <g stroke="#3a2a20" stroke-width="4" stroke-linecap="round">
+        <line x1="60" y1="8" x2="60" y2="40"/><line x1="44" y1="14" x2="50" y2="40"/><line x1="76" y1="14" x2="70" y2="40"/>
+        <line x1="28" y1="24" x2="40" y2="42"/><line x1="92" y1="24" x2="80" y2="42"/>
+      </g>
+    </svg>
+    <div class="menu">MENU</div>
+    <div class="ribbon">Bon appétit</div>
+
+    <div class="fries">
+      <svg viewBox="0 0 200 220" aria-hidden="true">
+        <g stroke="#c7861c" stroke-width="2">
+          <rect x="52" y="20" width="16" height="120" rx="3" fill="url(#fry)" transform="rotate(-16 60 140)"/>
+          <rect x="72" y="6" width="16" height="130" rx="3" fill="url(#fry)" transform="rotate(-7 80 140)"/>
+          <rect x="92" y="0" width="16" height="140" rx="3" fill="url(#fry)"/>
+          <rect x="112" y="8" width="16" height="130" rx="3" fill="url(#fry)" transform="rotate(8 120 140)"/>
+          <rect x="132" y="22" width="16" height="118" rx="3" fill="url(#fry)" transform="rotate(17 140 140)"/>
+          <rect x="82" y="30" width="15" height="110" rx="3" fill="url(#fry)" transform="rotate(4 90 140)"/>
+          <rect x="104" y="34" width="15" height="106" rx="3" fill="url(#fry)" transform="rotate(-5 110 140)"/>
+        </g>
+        <path d="M36 92 L164 92 L150 214 L50 214 Z" fill="#ef7d2d"/>
+        <path d="M36 92 Q100 124 164 92 L160 124 Q100 150 40 124 Z" fill="#d9651b"/>
+        <path d="M58 150 L142 150" stroke="#fff8ec" stroke-width="5" stroke-linecap="round" opacity=".9"/>
+        <text x="100" y="190" text-anchor="middle" font-family="Bebas" font-size="30" fill="#fff8ec" letter-spacing="2">AIO</text>
+      </svg>
+      <div class="classic">
+        <svg class="spark" viewBox="0 0 40 40" aria-hidden="true"><g stroke="#3a2a20" stroke-width="3.5" stroke-linecap="round"><line x1="34" y1="30" x2="20" y2="8"/><line x1="30" y1="36" x2="6" y2="26"/><line x1="36" y1="22" x2="34" y2="4"/></g></svg>
+        <span class="c">Classic</span><span class="f">FRIES</span>
+        <svg class="spark r" viewBox="0 0 40 40" aria-hidden="true"><g stroke="#3a2a20" stroke-width="3.5" stroke-linecap="round"><line x1="34" y1="30" x2="20" y2="8"/><line x1="30" y1="36" x2="6" y2="26"/><line x1="36" y1="22" x2="34" y2="4"/></g></svg>
+      </div>
+    </div>
+
+    <div class="table">
+      <div class="heads"><span>Medium</span><span>Large</span></div>
+      <div class="rows">
+        <div class="row"><span class="n">Normal</span><span class="dots"></span><span class="p">$2.30</span><span class="p">$3.10</span></div>
+        <div class="row"><span class="n">Cajun</span><span class="dots"></span><span class="p">$2.60</span><span class="p">$3.40</span></div>
+        <div class="row"><span class="n">BBQ</span><span class="dots"></span><span class="p">$3.20</span><span class="p">$3.90</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Right ────────────────────────────────────────── -->
+  <section class="right">
+    <div class="tag">Crispy Chicken</div>
+    <div class="table">
+      <div class="heads"><span>Medium</span><span>Large</span></div>
+      <div class="rows">
+        <div class="row"><span class="n">Fried</span><span class="dots"></span><span class="p">$2.30</span><span class="p">$3.30</span></div>
+        <div class="row out"><span class="n">Spicy</span><span class="soldout">sold out</span><span class="dots"></span><span class="p">$3.20</span><span class="p">$4.20</span></div>
+        <div class="row"><span class="n">Honey</span><span class="dots"></span><span class="p">$2.90</span><span class="p">$3.90</span></div>
+        <div class="row"><span class="n">Lemon</span><span class="dots"></span><span class="p">$2.50</span><span class="p">$3.50</span></div>
+      </div>
+    </div>
+    <div class="plate">
+      <svg class="food" viewBox="0 -110 420 450" aria-hidden="true">
+        <text x="206" y="-62" font-family="Kaushan" font-size="40" fill="#3a2a20" transform="rotate(-8 206 -62)">sauce</text>
+        <path d="M200 -70 Q150 -60 158 48 M144 32 L158 50 L172 34" stroke="#3a2a20" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- parchment -->
+        <path d="M40 60 L380 22 L410 300 L60 330 Z" fill="#fffaf1" stroke="#e7dccb" stroke-width="2"/>
+        <g stroke="#3a2a20" stroke-width="2.2" fill="none" opacity=".55" stroke-linecap="round">
+          <path d="M60 300 q20 -20 40 0 t40 0"/><path d="M340 60 q14 10 4 26"/><path d="M372 250 l14 -22"/><path d="M70 90 l-6 20"/>
+        </g>
+        <!-- herbs -->
+        <g fill="#6b8f3a"><path d="M110 70 l14 -6 -4 14z"/><path d="M150 50 l10 8 -12 4z"/><path d="M92 120 l12 4 -10 8z"/><path d="M128 96 l4 12 -12 -2z"/><path d="M170 84 l12 -2 -6 10z"/><path d="M80 170 l10 -8 2 12z"/></g>
+        <g fill="#8fae52"><circle cx="140" cy="80" r="4"/><circle cx="100" cy="100" r="3"/><circle cx="160" cy="66" r="3"/><circle cx="120" cy="140" r="3"/><circle cx="88" cy="140" r="4"/></g>
+        <!-- dip -->
+        <ellipse cx="150" cy="118" rx="62" ry="46" fill="#ffffff" stroke="#e6ddd0" stroke-width="3"/>
+        <ellipse cx="150" cy="114" rx="50" ry="35" fill="url(#dip)"/>
+        <ellipse cx="136" cy="102" rx="16" ry="7" fill="#fff" opacity=".35"/>
+        <path d="M150 100 q-10 -26 8 -34 q6 20 -8 34z M154 98 q20 -18 32 -6 q-16 12 -32 6z" fill="#4f7d2c"/>
+        <!-- tenders -->
+        <g filter="url(#crisp)">
+          <path d="M210 90 C250 70 300 80 318 110 C336 140 322 170 290 170 C260 172 230 150 214 128 C204 112 200 98 210 90Z" fill="url(#gold)" transform="rotate(12 260 125)"/>
+          <path d="M280 150 C320 140 370 160 380 196 C390 230 360 250 330 244 C300 238 276 214 270 190 C266 170 268 156 280 150Z" fill="url(#gold)"/>
+          <path d="M170 180 C210 160 262 176 276 210 C290 244 268 276 232 272 C200 268 176 244 166 220 C160 202 160 188 170 180Z" fill="url(#gold)"/>
+          <path d="M250 250 C290 238 340 256 346 284 C352 312 322 322 292 316 C264 310 244 294 240 276 C236 262 240 254 250 250Z" fill="url(#gold)"/>
+          <path d="M330 90 C360 84 392 100 396 126 C400 152 380 164 358 160 C336 156 318 138 316 118 C314 104 318 94 330 90Z" fill="url(#gold)"/>
+        </g>
+        <g fill="#fff3d6" opacity=".45"><ellipse cx="248" cy="104" rx="20" ry="6" transform="rotate(20 248 104)"/><ellipse cx="318" cy="170" rx="18" ry="5" transform="rotate(20 318 170)"/><ellipse cx="206" cy="200" rx="18" ry="5" transform="rotate(24 206 200)"/><ellipse cx="352" cy="108" rx="14" ry="4" transform="rotate(20 352 108)"/></g>
+        <!-- lemon wedge -->
+        <path d="M60 230 A50 50 0 0 0 150 262 Z" fill="#f4d23c" stroke="#e0b21a" stroke-width="4"/>
+        <g stroke="#fff4b0" stroke-width="3"><line x1="104" y1="246" x2="78" y2="262"/><line x1="104" y1="246" x2="104" y2="274"/><line x1="104" y1="246" x2="128" y2="270"/></g>
+      </svg>
+    </div>
+  </section>
+</div>
+<footer>Prices include tax · Ask our team about allergens</footer>
+</body></html>
